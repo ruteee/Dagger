@@ -1,15 +1,15 @@
 {
     "steps": [{
-        "number" : 1,
+        "number" : 0,
         "function": "sum_numbers",
-        "input": [1, 2],
-        "pre-conditions": ""
+        "input": {"a":1, "b":2},
+        "pre-conditions": []
     },
 
     {
-        "number": 2,
+        "number": 1,
         "function": "divide_number",
-        "input": ["previous_result", 2],
-        "pre-conditions": "1"
+        "input": {"previous_results": "True", "divisor": 2},
+        "pre-conditions": [0]
     }]
 }
