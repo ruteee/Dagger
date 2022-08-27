@@ -32,7 +32,7 @@ def execute_workflow(workflow_name):
         workflow = json.load(flow)
 
     steps_status = {}
-    results_list = {}
+    results_dict = {}
 
     step = workflow['steps'][0]
     return_ = execute_step(step)
@@ -42,12 +42,12 @@ def execute_workflow(workflow_name):
     logger.info(f"Status: {return_['status']}")
 
     if return_['status'] != 'OK':
-        message_error = f"The step #{step['number']} has failed, the executor has stopped, error: {return_['result']}"
-        logger.error(message_error)
+        error_msg = f"The step #{step['number']} has failed, the executor has stopped, error: {return_['result']}"
+        logger.error(error_msg)
         return
     else:
         steps_status[0] = 1
-        results_list['step_0'] = return_['result']
+        results_dict['step_0'] = return_['result']
 
     while (count_steps < (len(workflow['steps']) - 1)):
         count_steps += 1
@@ -68,17 +68,19 @@ def execute_workflow(workflow_name):
             logger.error(f"The execcution has failed because pre-conditions {conditions_not_ok} were not attended")
             return
         else:
-            return_ = execute_step(step, previous_results=results_list)
+            step_previous_results = {}
+            for node in pre_conditions:
+                step_previous_results.update({f"step_{node}": results_dict[f"step_{node}"]})
+
+            return_ = execute_step(step, previous_results=step_previous_results)
             if return_['status'] != 'OK':
                 steps_status[count_steps] = 0
-                message_error = f"The step #{step['number']} has failed, the executor stopped, error: {return_['result']}"
-                logger.error(message_error)
+                error_msg = f"The step #{step['number']} has failed, the executor stopped, error: {return_['result']}"
+                logger.error(error_msg)
             else:
                 steps_status[count_steps] = 1
-                results_list[f'step_{count_steps}'] = return_['result']
-        
+                results_dict[f'step_{count_steps}'] = return_['result']
         logger.info(f"Status: {return_['status']}")
-
 
     if return_['status'] == 'OK':
         logger.info("The execution has been complete")
@@ -88,9 +90,6 @@ def execute_workflow(workflow_name):
         error_msg = f"The execution has been stopped because step {count_steps} has failed"
         logger.info(error_msg)
         return error_msg
-
-
-
 
 if __name__ == '__main__':
     execute_workflow(sys.argv[1])
