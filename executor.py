@@ -1,25 +1,23 @@
-from cmath import log
 import sys
 import importlib
 import json
 import logging
-from unittest import result
 
 logger = logging.getLogger("execcutor_project_logger")
 logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
-def execute_step(step, pre_conditions = None, previous_results = None):
+def execute_task(task, previous_results = None):
     status = "OK"
-    func = step['function']
+    func = task['function']
 
     module = importlib.import_module(func)    
-    if 'previous_results' in list(step['input'].keys()):
-        step['input']['previous_results'] = previous_results
+    if 'previous_results' in list(task['input'].keys()):
+        task['input']['previous_results'] = previous_results
    
     result = None
     try:
-        result = module.main(**step['input'])
+        result = module.main(**task['input'])
     except BaseException as error:
         status = "FAILED"
         result = str(error)
@@ -31,65 +29,53 @@ def execute_workflow(workflow_name):
     with open(f"{workflow_name}.json", "rb") as flow:
         workflow = json.load(flow)
 
-    steps_status = {}
+    tasks_status = {}
     results_dict = {}
 
-    step = workflow['steps'][0]
-    return_ = execute_step(step)
-    
-    count_steps = 0
-    logger.info(f"On step {count_steps}")
-    logger.info(f"Status: {return_['status']}")
+    task = workflow['tasks'][0]
+    return_ = execute_task(task)
+   
+    logger.info("Starting dag flow\n")
+    for task in workflow['tasks'][0:]:
+        logger.info(f"On task {task['number']}")
+        pre_conditions = task['pre-conditions']
 
-    if return_['status'] != 'OK':
-        error_msg = f"The step #{step['number']} has failed, the executor has stopped, error: {return_['result']}"
-        logger.error(error_msg)
-        return
-    else:
-        steps_status[0] = 1
-        results_dict['step_0'] = return_['result']
-
-    while (count_steps < (len(workflow['steps']) - 1)):
-        count_steps += 1
-        logger.info(f"On step {count_steps}")
-        step = workflow['steps'][count_steps]
-        pre_conditions = step['pre-conditions']
-
-        conditions_ok = True
-        conditions_not_ok = []
+        logger.info("Looking for pre-conditions")
         for condition in pre_conditions:
-            if steps_status[condition] != 1:
-                conditions_ok = False
-                conditions_not_ok.append(condition)
-        
+            if f"task_{condition}" not in list(tasks_status.keys()):
+                task_in_between = workflow['tasks'][condition]
+                return_ = execute_task(task_in_between, previous_results=results_dict)
+                if return_['status'] != 'OK':
+                    error_msg =f"The execcution has failed because pre-condition {condition} were not attended, error: {return_['result']}"
+                    logger.error(error_msg)
+                    return
+                else:
+                    tasks_status[condition] = 1
+                    results_dict[f'task_{condition}'] = return_['result']    
+                logger.info(f"Status: {return_['status']}")
+                            
         return_ = None
-        if not conditions_ok:
-            steps_status[count_steps] = 0
-            logger.error(f"The execcution has failed because pre-conditions {conditions_not_ok} were not attended")
+        task_previous_results = {}
+        for node in pre_conditions:
+            task_previous_results.update({f"task_{node}": results_dict[f"task_{node}"]})          
+
+        logger.info("Executing task function")
+        return_ = execute_task(task, previous_results=task_previous_results)
+        if return_['status'] != 'OK':
+            tasks_status[f'task_{task["number"]}'] = 0
+            error_msg = f"The task #{task['number']} has failed, the executor stopped, error: {return_['result']}"
+            logger.error(error_msg)
             return
         else:
-            step_previous_results = {}
-            for node in pre_conditions:
-                step_previous_results.update({f"step_{node}": results_dict[f"step_{node}"]})
+            tasks_status[f'task_{task["number"]}']= 1
+            results_dict[f'task_{task["number"]}'] = return_['result']
+        logger.info(f"Status: {return_['status']}\n")
 
-            return_ = execute_step(step, previous_results=step_previous_results)
-            if return_['status'] != 'OK':
-                steps_status[count_steps] = 0
-                error_msg = f"The step #{step['number']} has failed, the executor stopped, error: {return_['result']}"
-                logger.error(error_msg)
-            else:
-                steps_status[count_steps] = 1
-                results_dict[f'step_{count_steps}'] = return_['result']
-        logger.info(f"Status: {return_['status']}")
 
-    if return_['status'] == 'OK':
-        logger.info("The execution has been complete")
-        logger.info(f"Result {return_['result']}")
-        return return_['result']
-    else:
-        error_msg = f"The execution has been stopped because step {count_steps} has failed"
-        logger.info(error_msg)
-        return error_msg
+    logger.info("The execution has been complete")
+
+    logger.info(f"Result f the final task: {return_['result']}")
+    return return_['result']
 
 if __name__ == '__main__':
     execute_workflow(sys.argv[1])
