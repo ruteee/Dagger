@@ -1,8 +1,8 @@
 # Dagger
 
-This repo contains a python implementation of a DAG executor.
-
+This repo contains a python implementation of a DAG executor (executor.py).
 The executor runs throug the reading of a workflow file in the json format, containig the dags definition.
+In order for this executor works, you have to keep the workflow json files in the root folder.
 
 ## How to use?
 
