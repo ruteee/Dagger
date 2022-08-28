@@ -39,6 +39,28 @@ Suposing your function only sum two numbers, you would create a file named sum_n
     def main(number_1, number_2):
 
         return number_1 + number_2
+        
+If your functions need to access results of other task, you neeed add the parameter 'previous_results' as a parameter in the function
+implementation.
+   
+   For example, if you have the following task definition:
+       {
+           "number" : 1,
+           "function": "my_function",
+           "input": {"previous_results" : "True", "my_param": 1 },
+           "pre-conditions": [0]
+       }
+       
+   Then, besides your params, the function definition will have to include previous_results as a param.
+   
+      def main(previous_results, my_param):
+      
+         #Form of accessing the result of task 0
+         result_task_0 = previous_results['task_0'] 
+         #Function body example...
+         print(my_param,result_task_0 )
+  
+   
 
 It is provided in this repo, two workflows example: workflow_data.json an work_flow_test0.json
 
