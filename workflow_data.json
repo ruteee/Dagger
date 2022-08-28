@@ -1,0 +1,21 @@
+{
+    "tasks": [{
+        "number" : 0,
+        "function": "drop_nans",
+        "input": {"path": "data.csv", "subset": ["Joga"]},
+        "pre-conditions": []
+    },
+    {
+        "number" : 1,
+        "function": "compute_age",
+        "input": {"previous_results": "True", "col": "dt_nascimento"},
+        "pre-conditions": [0]
+    },
+
+    {
+        "number": 2,
+        "function": "groupby",
+        "input": {"previous_results": "True", "by": ["Joga", "age"], "agg_func": "size"},
+        "pre-conditions": [1]
+    }]
+}
