@@ -8,7 +8,12 @@ In order for this executor to work, you have to keep the workflow json files and
 in the root folder.
 
 ## How to use?
+You can run the executor in a linux terminal, with the following comand:
 
+        python3 ./executor.py workflow.json
+   
+where "workflow" is the name of your workflow file
+   
 Each workflow file (DAG) must contain a list of tasks, where each task is also defined as an object containg the following attributes: 
 
     * number - The task ID.
