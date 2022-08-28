@@ -1,5 +1,5 @@
 {
-    "steps": [{
+    "tasks": [{
         "number" : 0,
         "function": "sum_numbers",
         "input": {"a":1, "b":2},
